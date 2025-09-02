@@ -4,20 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- 1. Project Coordinates: Defines your project's unique name -->
     <groupId>com.atm</groupId>
     <artifactId>atm-system</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <!-- 2. Properties: Configures project-wide settings -->
     <properties>
-        <!-- This is the crucial fix: Tells Maven to use Java 17 -->
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Updated to align with your installed JDK 21 -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!-- 3. Dependencies: Lists the external libraries your project needs -->
     <dependencies>
         <!-- Dependency for the MySQL Database Driver -->
         <dependency>
@@ -34,7 +31,6 @@
         </dependency>
     </dependencies>
 
-    <!-- 4. Build Configuration: Defines how the project is built and run -->
     <build>
         <plugins>
             <!-- This plugin allows you to run the application using "mvn exec:java" -->
@@ -43,7 +39,6 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <!-- IMPORTANT: This must match the full path to your main class -->
                     <mainClass>com.atm.main.ATM_CLI</mainClass>
                 </configuration>
             </plugin>
