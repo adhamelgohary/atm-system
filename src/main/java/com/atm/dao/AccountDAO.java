@@ -1,0 +1,66 @@
+package com.atm.dao;
+
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Optional;
+
+import com.atm.model.Account;
+import com.atm.util.DatabaseConnection;
+
+public class AccountDAO {
+    public Optional<Account> findByAccountNumber(String accountNumber) {
+        String sql = "SELECT * FROM accounts WHERE account_number = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, accountNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapRowToAccount(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Database error finding account: " + e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Account> findByUserId(int userId) {
+        String sql = "SELECT * FROM accounts WHERE user_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapRowToAccount(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Database error finding account by user ID: " + e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    public void updateBalance(String accountNumber, BigDecimal newBalance) throws SQLException {
+        String sql = "UPDATE accounts SET balance = ? WHERE account_number = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setBigDecimal(1, newBalance);
+            pstmt.setString(2, accountNumber);
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Updating balance failed, no rows affected.");
+            }
+        }
+    }
+
+    private Account mapRowToAccount(ResultSet rs) throws SQLException {
+        Account account = new Account();
+        account.setId(rs.getInt("id"));
+        account.setAccountNumber(rs.getString("account_number"));
+        account.setUserId(rs.getInt("user_id"));
+        account.setAccountType(rs.getString("account_type"));
+        account.setBalance(rs.getBigDecimal("balance"));
+        return account;
+    }
+}
