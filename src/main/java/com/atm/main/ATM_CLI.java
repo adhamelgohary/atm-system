@@ -23,40 +23,74 @@ public class ATM_CLI {
     public static void main(String[] args) {
         System.out.println("Welcome to the Scalable ATM System!");
         while (true) {
-            // Step 1: Get and verify the User ID
-            System.out.print("\nEnter User ID: ");
-            String userId = scanner.nextLine();
+            System.out.println("\n--- Main Menu ---");
+            System.out.println("1. Login");
+            System.out.println("2. Register");
+            System.out.println("3. Exit");
+            System.out.print("Choose an option: ");
+            String choice = scanner.nextLine();
 
-            Optional<User> userOptional = userService.findUserByUserId(userId);
-
-            if (userOptional.isEmpty()) {
-                System.out.println("User ID not found. Please try again.");
-                continue; // Restart the loop
-            }
-
-            // If we reach here, the user exists. Now get the user object.
-            User user = userOptional.get();
-
-            // Step 2: Get and verify the PIN for the found user
-            System.out.print("Enter PIN: ");
-            String pin = scanner.nextLine();
-
-            if (userService.isPinCorrect(user, pin)) {
-                System.out.println("\nLogin Successful! Welcome, " + user.getFullName());
-                
-                try {
-                    // Dynamically find the account associated with the user
-                    Account account = accountService.getAccountByUserId(user.getId());
-                    showAccountMenu(account.getAccountNumber());
-                } catch (Exception e) {
-                    System.err.println("\nERROR: Could not retrieve account details. " + e.getMessage());
-                    // The loop will restart, prompting for User ID again.
+            switch (choice) {
+                case "1" -> handleLogin();
+                case "2" -> handleRegistration();
+                case "3" -> {
+                    System.out.println("Thank you for using the ATM. Goodbye!");
+                    return;
                 }
-
-            } else {
-                System.out.println("Incorrect PIN. Please try again.");
-                // The loop will naturally restart
+                default -> System.out.println("Invalid option. Please try again.");
             }
+        }
+    }
+
+    private static void handleLogin() {
+        System.out.print("\nEnter User ID: ");
+        String userId = scanner.nextLine();
+
+        Optional<User> userOptional = userService.findUserByUserId(userId);
+
+        if (userOptional.isEmpty()) {
+            System.out.println("User ID not found. Please try again.");
+            return; // Return to main menu
+        }
+
+        User user = userOptional.get();
+
+        System.out.print("Enter PIN: ");
+        String pin = scanner.nextLine();
+
+        if (userService.isPinCorrect(user, pin)) {
+            System.out.println("\nLogin Successful! Welcome, " + user.getFullName());
+            try {
+                Account account = accountService.getAccountByUserId(user.getId());
+                showAccountMenu(account.getAccountNumber());
+            } catch (Exception e) {
+                System.err.println("\nERROR: Could not retrieve account details. " + e.getMessage());
+            }
+        } else {
+            System.out.println("Incorrect PIN. Please try again.");
+        }
+    }
+
+    private static void handleRegistration() {
+        System.out.println("\n--- New User Registration ---");
+        System.out.print("Enter your full name: ");
+        String fullName = scanner.nextLine();
+        System.out.print("Enter a new user ID: ");
+        String newUserId = scanner.nextLine();
+        System.out.print("Enter a new PIN: ");
+        String newPin = scanner.nextLine();
+
+        try {
+            User newUser = userService.registerUser(fullName, newUserId, newPin);
+            System.out.println("\nRegistration successful for user: " + newUser.getFullName());
+
+            Account newAccount = accountService.createAccountForUser(newUser.getId());
+            System.out.println("Your new account has been created.");
+            System.out.println("Account Number: " + newAccount.getAccountNumber());
+            System.out.println("You can now log in with your new credentials.");
+
+        } catch (Exception e) {
+            System.err.println("\nERROR: Registration failed. " + e.getMessage());
         }
     }
 

@@ -37,4 +37,17 @@ public class UserService {
         }
         return BCrypt.checkpw(plainTextPin, user.getPinHash());
     }
+
+    public User registerUser(String fullName, String userId, String plainTextPin) throws Exception {
+        // Check if user already exists
+        if (userDAO.findByUserId(userId).isPresent()) {
+            throw new Exception("User ID '" + userId + "' is already taken.");
+        }
+
+        // Hash the PIN
+        String hashedPin = BCrypt.hashpw(plainTextPin, BCrypt.gensalt());
+
+        // Create the user
+        return userDAO.createUser(fullName, userId, hashedPin);
+    }
 }

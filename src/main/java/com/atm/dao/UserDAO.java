@@ -19,16 +19,48 @@ public class UserDAO {
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                User user = new User();
-                user.setId(rs.getInt("id"));
-                user.setUserId(rs.getString("user_id"));
-                user.setPinHash(rs.getString("pin_hash"));
-                user.setFullName(rs.getString("full_name"));
-                return Optional.of(user);
+                return Optional.of(mapRowToUser(rs));
             }
         } catch (SQLException e) {
             System.err.println("Database error finding user: " + e.getMessage());
         }
         return Optional.empty();
+    }
+
+    public User createUser(String fullName, String userId, String pinHash) throws SQLException {
+        String sql = "INSERT INTO users (full_name, user_id, pin_hash) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, fullName);
+            pstmt.setString(2, userId);
+            pstmt.setString(3, pinHash);
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows == 0) {
+                throw new SQLException("Creating user failed, no rows affected.");
+            }
+
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    User newUser = new User();
+                    newUser.setId(generatedKeys.getInt(1));
+                    newUser.setFullName(fullName);
+                    newUser.setUserId(userId);
+                    newUser.setPinHash(pinHash);
+                    return newUser;
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
+                }
+            }
+        }
+    }
+
+    private User mapRowToUser(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setId(rs.getInt("id"));
+        user.setUserId(rs.getString("user_id"));
+        user.setPinHash(rs.getString("pin_hash"));
+        user.setFullName(rs.getString("full_name"));
+        return user;
     }
 }

@@ -51,4 +51,10 @@ public class AccountService {
         accountDAO.updateBalance(accountNumber, newBalance);
         transactionDAO.logTransaction(account.getId(), "DEPOSIT", amount, null);
     }
+
+    public Account createAccountForUser(int userId) throws Exception {
+        // Generate a unique account number
+        String accountNumber = "ACC" + (1000 + new java.util.Random().nextInt(9000));
+        return accountDAO.createAccount(userId, accountNumber, "CHECKING");
+    }
 }

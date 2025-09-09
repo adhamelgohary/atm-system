@@ -54,6 +54,36 @@ public class AccountDAO {
         }
     }
 
+    public Account createAccount(int userId, String accountNumber, String accountType) throws SQLException {
+        String sql = "INSERT INTO accounts (user_id, account_number, account_type, balance) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            pstmt.setInt(1, userId);
+            pstmt.setString(2, accountNumber);
+            pstmt.setString(3, accountType);
+            pstmt.setBigDecimal(4, BigDecimal.ZERO);
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows == 0) {
+                throw new SQLException("Creating account failed, no rows affected.");
+            }
+
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    Account newAccount = new Account();
+                    newAccount.setId(generatedKeys.getInt(1));
+                    newAccount.setUserId(userId);
+                    newAccount.setAccountNumber(accountNumber);
+                    newAccount.setAccountType(accountType);
+                    newAccount.setBalance(BigDecimal.ZERO);
+                    return newAccount;
+                } else {
+                    throw new SQLException("Creating account failed, no ID obtained.");
+                }
+            }
+        }
+    }
+
     private Account mapRowToAccount(ResultSet rs) throws SQLException {
         Account account = new Account();
         account.setId(rs.getInt("id"));
