@@ -8,6 +8,8 @@ public class Account {
     private int userId;
     private String accountType;
     private BigDecimal balance;
+    private String status;
+    private Integer requestedBy;
 
     // Getters and Setters
     public int getId() { return id; }
@@ -20,4 +22,8 @@ public class Account {
     public void setAccountType(String accountType) { this.accountType = accountType; }
     public BigDecimal getBalance() { return balance; }
     public void setBalance(BigDecimal balance) { this.balance = balance; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Integer getRequestedBy() { return requestedBy; }
+    public void setRequestedBy(Integer requestedBy) { this.requestedBy = requestedBy; }
 }

@@ -48,6 +48,24 @@ public class UserService {
         String hashedPin = BCrypt.hashpw(plainTextPin, BCrypt.gensalt());
 
         // Create the user
-        return userDAO.createUser(fullName, userId, hashedPin);
+        return userDAO.createUser(fullName, userId, hashedPin, "CUSTOMER");
+    }
+
+    public User registerEmployee(String fullName, String userId, String plainTextPin, String role) throws Exception {
+        // Check if user already exists
+        if (userDAO.findByUserId(userId).isPresent()) {
+            throw new Exception("User ID '" + userId + "' is already taken.");
+        }
+
+        // For simplicity, we are only allowing EMPLOYEE and MANAGER roles to be created via this method.
+        if (!role.equals("EMPLOYEE") && !role.equals("MANAGER")) {
+            throw new Exception("Invalid role specified. Must be EMPLOYEE or MANAGER.");
+        }
+
+        // Hash the PIN
+        String hashedPin = BCrypt.hashpw(plainTextPin, BCrypt.gensalt());
+
+        // Create the user
+        return userDAO.createUser(fullName, userId, hashedPin, role);
     }
 }

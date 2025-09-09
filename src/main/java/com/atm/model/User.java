@@ -5,6 +5,7 @@ public class User {
     private String userId;
     private String pinHash;
     private String fullName;
+    private String role;
 
     // Getters and Setters
     public int getId() { return id; }
@@ -15,4 +16,6 @@ public class User {
     public void setPinHash(String pinHash) { this.pinHash = pinHash; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

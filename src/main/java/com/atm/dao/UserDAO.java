@@ -27,13 +27,14 @@ public class UserDAO {
         return Optional.empty();
     }
 
-    public User createUser(String fullName, String userId, String pinHash) throws SQLException {
-        String sql = "INSERT INTO users (full_name, user_id, pin_hash) VALUES (?, ?, ?)";
+    public User createUser(String fullName, String userId, String pinHash, String role) throws SQLException {
+        String sql = "INSERT INTO users (full_name, user_id, pin_hash, role) VALUES (?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, fullName);
             pstmt.setString(2, userId);
             pstmt.setString(3, pinHash);
+            pstmt.setString(4, role);
             int affectedRows = pstmt.executeUpdate();
 
             if (affectedRows == 0) {
@@ -47,6 +48,7 @@ public class UserDAO {
                     newUser.setFullName(fullName);
                     newUser.setUserId(userId);
                     newUser.setPinHash(pinHash);
+                    newUser.setRole(role);
                     return newUser;
                 } else {
                     throw new SQLException("Creating user failed, no ID obtained.");
@@ -61,6 +63,7 @@ public class UserDAO {
         user.setUserId(rs.getString("user_id"));
         user.setPinHash(rs.getString("pin_hash"));
         user.setFullName(rs.getString("full_name"));
+        user.setRole(rs.getString("role"));
         return user;
     }
 }

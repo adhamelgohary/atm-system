@@ -55,6 +55,24 @@ public class AccountService {
     public Account createAccountForUser(int userId) throws Exception {
         // Generate a unique account number
         String accountNumber = "ACC" + (1000 + new java.util.Random().nextInt(9000));
-        return accountDAO.createAccount(userId, accountNumber, "CHECKING");
+        return accountDAO.createAccount(userId, accountNumber, "CHECKING", "ACTIVE", null);
+    }
+
+    public Account requestNewAccount(int customerId, int employeeId) throws Exception {
+        // Generate a unique account number
+        String accountNumber = "ACC" + (1000 + new java.util.Random().nextInt(9000));
+        return accountDAO.createAccount(customerId, accountNumber, "CHECKING", "PENDING_ACTIVATION", employeeId);
+    }
+
+    public java.util.List<Account> getPendingAccounts() {
+        return accountDAO.getPendingAccounts();
+    }
+
+    public void activateAccount(String accountNumber) throws Exception {
+        Account account = getAccountDetails(accountNumber);
+        if (!account.getStatus().equals("PENDING_ACTIVATION")) {
+            throw new Exception("Account is not pending activation.");
+        }
+        accountDAO.updateAccountStatus(accountNumber, "ACTIVE");
     }
 }
