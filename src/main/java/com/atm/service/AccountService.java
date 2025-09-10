@@ -1,78 +1,106 @@
 package com.atm.service;
 
-import java.math.BigDecimal;
-
-import com.atm.dao.AccountDAO;
-import com.atm.dao.TransactionDAO;
+import com.atm.dao.AccountRepository;
+import com.atm.dao.TransactionRepository;
 import com.atm.model.Account;
+import com.atm.model.Transaction;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Service
 public class AccountService {
-    private final AccountDAO accountDAO;
-    private final TransactionDAO transactionDAO;
 
-    public AccountService(AccountDAO accountDAO, TransactionDAO transactionDAO) {
-        this.accountDAO = accountDAO;
-        this.transactionDAO = transactionDAO;
+    private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
+
+    @Autowired
+    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
     }
 
-    public Account getAccountDetails(String accountNumber) throws Exception {
-        return accountDAO.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new Exception("Account " + accountNumber + " not found."));
+    @Transactional
+    public Account createAccountForUser(Long userId) {
+        Account newAccount = new Account();
+        newAccount.setUserId(userId);
+        newAccount.setAccountNumber(generateAccountNumber());
+        newAccount.setBalance(BigDecimal.ZERO);
+        newAccount.setStatus("ACTIVE");
+        return accountRepository.save(newAccount);
     }
 
-    public Account getAccountByUserId(int userId) throws Exception {
-        return accountDAO.findByUserId(userId)
-                .orElseThrow(() -> new Exception("Account for user ID " + userId + " not found."));
+    public Optional<Account> getAccountByUserId(Long userId) {
+        return accountRepository.findByUserId(userId);
     }
 
-    public void withdraw(String accountNumber, BigDecimal amount) throws Exception {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Withdrawal amount must be positive.");
-        }
+    public Optional<Account> getAccountDetails(String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber);
+    }
 
-        Account account = getAccountDetails(accountNumber);
+    @Transactional
+    public void deposit(String accountNumber, BigDecimal amount) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+        account.setBalance(account.getBalance().add(amount));
+        accountRepository.save(account);
 
+        Transaction transaction = new Transaction();
+        transaction.setAccountId(account.getId().intValue());
+        transaction.setTransactionType("DEPOSIT");
+        transaction.setAmount(amount);
+        transaction.setTransactionDate(LocalDateTime.now());
+        transactionRepository.save(transaction);
+    }
+
+    @Transactional
+    public void withdraw(String accountNumber, BigDecimal amount) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
         if (account.getBalance().compareTo(amount) < 0) {
-            throw new Exception("Insufficient funds. Current balance: $" + account.getBalance());
+            throw new RuntimeException("Insufficient funds");
         }
+        account.setBalance(account.getBalance().subtract(amount));
+        accountRepository.save(account);
 
-        BigDecimal newBalance = account.getBalance().subtract(amount);
-        accountDAO.updateBalance(accountNumber, newBalance);
-        transactionDAO.logTransaction(account.getId(), "WITHDRAWAL", amount, null);
+        Transaction transaction = new Transaction();
+        transaction.setAccountId(account.getId().intValue());
+        transaction.setTransactionType("WITHDRAWAL");
+        transaction.setAmount(amount);
+        transaction.setTransactionDate(LocalDateTime.now());
+        transactionRepository.save(transaction);
     }
 
-    public void deposit(String accountNumber, BigDecimal amount) throws Exception {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Deposit amount must be positive.");
-        }
-
-        Account account = getAccountDetails(accountNumber);
-        BigDecimal newBalance = account.getBalance().add(amount);
-        accountDAO.updateBalance(accountNumber, newBalance);
-        transactionDAO.logTransaction(account.getId(), "DEPOSIT", amount, null);
+    public List<Account> getPendingAccounts() {
+        return accountRepository.findByStatus("PENDING");
     }
 
-    public Account createAccountForUser(int userId) throws Exception {
-        // Generate a unique account number
-        String accountNumber = "ACC" + (1000 + new java.util.Random().nextInt(9000));
-        return accountDAO.createAccount(userId, accountNumber, "CHECKING", "ACTIVE", null);
+    @Transactional
+    public void activateAccount(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+        account.setStatus("ACTIVE");
+        accountRepository.save(account);
     }
 
-    public Account requestNewAccount(int customerId, int employeeId) throws Exception {
-        // Generate a unique account number
-        String accountNumber = "ACC" + (1000 + new java.util.Random().nextInt(9000));
-        return accountDAO.createAccount(customerId, accountNumber, "CHECKING", "PENDING_ACTIVATION", employeeId);
+    @Transactional
+    public void requestNewAccount(Long customerId, Integer employeeId) {
+        Account newAccount = new Account();
+        newAccount.setUserId(customerId);
+        newAccount.setAccountNumber(generateAccountNumber());
+        newAccount.setBalance(BigDecimal.ZERO);
+        newAccount.setStatus("PENDING");
+        newAccount.setRequestedBy(employeeId);
+        accountRepository.save(newAccount);
     }
 
-    public java.util.List<Account> getPendingAccounts() {
-        return accountDAO.getPendingAccounts();
-    }
-
-    public void activateAccount(String accountNumber) throws Exception {
-        Account account = getAccountDetails(accountNumber);
-        if (!account.getStatus().equals("PENDING_ACTIVATION")) {
-            throw new Exception("Account is not pending activation.");
-        }
-        accountDAO.updateAccountStatus(accountNumber, "ACTIVE");
+    private String generateAccountNumber() {
+        // Simple account number generation logic
+        return String.valueOf(System.currentTimeMillis());
     }
 }

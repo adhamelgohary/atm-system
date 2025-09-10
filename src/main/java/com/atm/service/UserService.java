@@ -1,71 +1,38 @@
 package com.atm.service;
 
+import com.atm.dao.UserRepository;
+import com.atm.model.User;
+import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.util.Optional;
 
-import org.mindrot.jbcrypt.BCrypt;
-
-import com.atm.dao.UserDAO;
-import com.atm.model.User;
-
+@Service
 public class UserService {
-    private final UserDAO userDAO;
 
-    public UserService(UserDAO userDAO) {
-        this.userDAO = userDAO;
+    private final UserRepository userRepository;
+
+    @Autowired
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    /**
-     * Finds a user by their user ID.
-     * This is the first step of authentication.
-     * @param userId The user ID to search for.
-     * @return An Optional containing the User if found, otherwise an empty Optional.
-     */
+    public User registerUser(String fullName, String userId, String pin) {
+        String pinHash = BCrypt.hashpw(pin, BCrypt.gensalt());
+        User newUser = new User();
+        newUser.setFullName(fullName);
+        newUser.setUserId(userId);
+        newUser.setPinHash(pinHash);
+        newUser.setRole("CUSTOMER");
+        return userRepository.save(newUser);
+    }
+
     public Optional<User> findUserByUserId(String userId) {
-        return userDAO.findByUserId(userId);
+        return userRepository.findByUserId(userId);
     }
 
-    /**
-     * Verifies if the provided plain text PIN matches the stored hash for a given user.
-     * This is the second step of authentication.
-     * @param user The User object (which contains the hash).
-     * @param plainTextPin The PIN entered by the user.
-     * @return true if the PIN is correct, false otherwise.
-     */
-    public boolean isPinCorrect(User user, String plainTextPin) {
-        if (user == null || user.getPinHash() == null || plainTextPin == null) {
-            return false;
-        }
-        return BCrypt.checkpw(plainTextPin, user.getPinHash());
-    }
-
-    public User registerUser(String fullName, String userId, String plainTextPin) throws Exception {
-        // Check if user already exists
-        if (userDAO.findByUserId(userId).isPresent()) {
-            throw new Exception("User ID '" + userId + "' is already taken.");
-        }
-
-        // Hash the PIN
-        String hashedPin = BCrypt.hashpw(plainTextPin, BCrypt.gensalt());
-
-        // Create the user
-        return userDAO.createUser(fullName, userId, hashedPin, "CUSTOMER");
-    }
-
-    public User registerEmployee(String fullName, String userId, String plainTextPin, String role) throws Exception {
-        // Check if user already exists
-        if (userDAO.findByUserId(userId).isPresent()) {
-            throw new Exception("User ID '" + userId + "' is already taken.");
-        }
-
-        // For simplicity, we are only allowing EMPLOYEE and MANAGER roles to be created via this method.
-        if (!role.equals("EMPLOYEE") && !role.equals("MANAGER")) {
-            throw new Exception("Invalid role specified. Must be EMPLOYEE or MANAGER.");
-        }
-
-        // Hash the PIN
-        String hashedPin = BCrypt.hashpw(plainTextPin, BCrypt.gensalt());
-
-        // Create the user
-        return userDAO.createUser(fullName, userId, hashedPin, role);
+    public boolean isPinCorrect(User user, String pin) {
+        return BCrypt.checkpw(pin, user.getPinHash());
     }
 }
